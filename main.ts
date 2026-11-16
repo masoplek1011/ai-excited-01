@@ -207,7 +207,7 @@ function drawSky() {
 const SUN = { cx: 700, cy: 330, r: 225 };
 const CUT_D = [0.77, 0.64];                 // cut direction
 const CUT_N = [0.64, -0.77];                // cut normal
-const CUT_OFF = 22;                         // half-gap between the halves
+const CUT_OFF = 34;                         // half-gap between the halves
 
 function sunColor(dx, dy, r) {
   // vertical gradient: yellow-white top -> red -> deep magenta bottom
@@ -234,9 +234,10 @@ function drawSunHalf(ox, oy, keepSign) {
       const d2 = dx * dx + dy * dy;
       if (d2 > r * r) continue;
       // clip to one side of the cut line (measured from the true centre),
-      // with a real gap so the sky shows through the split
+      // with a real gap so the sky shows through the split: 24px per side,
+      // a 48px band of dark sky between the two cut faces
       const s = (x - cx) * CUT_N[0] + (y - cy) * CUT_N[1];
-      if (s * keepSign < 12) continue;
+      if (s * keepSign < 24) continue;
       // synthwave slats: horizontal gaps, widening toward the bottom
       if (dy > r * 0.02) {
         const t = dy / r;
@@ -262,18 +263,22 @@ function drawSun() {
   const ox = CUT_N[0] * CUT_OFF, oy = CUT_N[1] * CUT_OFF;
   drawSunHalf(-ox, -oy, +1);
   drawSunHalf(ox, oy, -1);
-  // light leaking from the split: hot core line + glow along the cut
-  const lx0 = cx - CUT_D[0] * (r + 30), ly0 = cy - CUT_D[1] * (r + 30);
-  const lx1 = cx + CUT_D[0] * (r + 30), ly1 = cy + CUT_D[1] * (r + 30);
-  glowLine(lx0, ly0, lx1, ly1, 7, 255, 240, 200, 0.95);
-  thickLine(lx0, ly0, lx1, ly1, 3, 255, 255, 255, 1);
-  // a few bright shards flying off the cut
-  for (let i = 0; i < 7; i++) {
-    const t = rr(-0.8, 0.8);
-    const sx = cx + CUT_D[0] * t * r + CUT_N[0] * rr(6, 26) * (rnd() < 0.5 ? 1 : -1);
-    const sy = cy + CUT_D[1] * t * r + CUT_N[1] * rr(6, 26) * (rnd() < 0.5 ? 1 : -1);
+  // bright rims on BOTH cut faces — the split itself stays dark sky, so
+  // the two halves read as two separate pieces, not one disc with a slash
+  for (const sign of [1, -1]) {
+    const fx = cx + CUT_N[0] * 24 * sign, fy = cy + CUT_N[1] * 24 * sign;
+    const rx0 = fx - CUT_D[0] * r, ry0 = fy - CUT_D[1] * r;
+    const rx1 = fx + CUT_D[0] * r, ry1 = fy + CUT_D[1] * r;
+    glowLine(rx0, ry0, rx1, ry1, 5, 255, 240, 200, 0.95);
+    thickLine(rx0, ry0, rx1, ry1, 2, 255, 255, 255, 1);
+  }
+  // bright shards flying off the cut, inside the dark gap
+  for (let i = 0; i < 12; i++) {
+    const t = rr(-0.85, 0.85);
+    const sx = cx + CUT_D[0] * t * r + CUT_N[0] * rr(4, 22) * (rnd() < 0.5 ? 1 : -1);
+    const sy = cy + CUT_D[1] * t * r + CUT_N[1] * rr(4, 22) * (rnd() < 0.5 ? 1 : -1);
     const a = Math.atan2(CUT_D[1], CUT_D[0]) + rr(-0.5, 0.5);
-    const len = rr(8, 26);
+    const len = rr(8, 22);
     thickLine(sx, sy, sx + Math.cos(a) * len, sy + Math.sin(a) * len, 2.5, 255, 220, 160, 0.9);
   }
   // shockwave arcs radiating from the cut (lower-left side)
